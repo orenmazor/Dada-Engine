@@ -1,0 +1,15 @@
+00index.txt         390  
+COPYRIGHT          2894  
+Makefile.inc        283  
+WHATSNEW           5335  
+cclass.h           2933  
+cname.h            3881  
+engine.c          28860  
+re_format.7       11738  
+regcomp.c         41850  
+regerror.c         5560  
+regex.3           16762  
+regex2.h           7399  
+regexec.c          6356  
+regfree.c          2879  
+utils.h            2483  

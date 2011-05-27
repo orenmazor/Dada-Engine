@@ -1,0 +1,80 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(src/check.c)
+
+AC_CONFIG_HEADER(src/config.h)
+
+dnl Checks for programs.
+AC_PROG_LEX
+AC_PROG_CC
+AC_PROG_INSTALL
+AC_PROG_MAKE_SET
+AC_PROG_YACC
+AC_PROG_RANLIB
+
+dnl Find the C preprocessor, wherever it may be on this system
+AC_MSG_CHECKING(where to find the C preprocessor)
+if test -x /lib/cpp
+then
+  CPP_LOCATION="/lib/cpp"
+  AC_MSG_RESULT(/lib/cpp)
+else
+  if test -x /usr/ccs/lib/cpp 
+  then
+    CPP_LOCATION="/usr/ccs/lib/cpp"
+    AC_MSG_RESULT(/usr/ccs/lib/cpp)
+  else
+    dnl some sort of smart /usr/lib/gcc-lib/** check would be nice
+    if test -d /usr/lib/gcc-lib
+    then
+      foo=`find /usr/lib/gcc-lib -type f -name cpp -print |head -1`
+      if -n "$foo" 
+      then
+        CPP_LOCATION="$foo"
+        AC_MSG_RESULT("$foo")        
+      else
+        dnl punt
+        CPP_LOCATION="cpp"
+        AC_MSG_RESULT("unknown. you\'re on your own...")
+      fi
+    fi
+
+  fi
+fi
+
+dnl Checks for libraries.
+
+dnl kludge for Solaris 2.x
+
+AC_MSG_CHECKING(for /usr/ucblib)
+if test -d /usr/ucblib 
+then
+  LIBS="-L/usr/ucblib $LIBS"
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+fi
+
+dnl Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS(unistd.h)
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_C_INLINE
+
+dnl Checks for library functions.
+AC_FUNC_ALLOCA
+AC_CHECK_LIB(ucb, random)
+AC_CHECK_FUNCS(regcomp strcspn strdup)
+AC_CHECK_FUNC(regcomp, HAVE_REGCOMP=1, [
+MAKE_REGEXP='$(MAKE) -C regex'
+REGEXP_LIB='../regex/libregex.a'
+REGEXP_INCLUDE='-I../regex'
+])
+
+AC_SUBST(MAKE_REGEXP)
+AC_SUBST(REGEXP_LIB)
+AC_SUBST(REGEXP_INCLUDE)
+AC_SUBST(CPP_LOCATION)
+
+AC_OUTPUT(Makefile doc/Makefile src/Makefile regex/Makefile inst)

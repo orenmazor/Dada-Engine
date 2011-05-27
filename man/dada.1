@@ -1,0 +1,53 @@
+.TH dada 1 "16 Jul 1995" "Emperor Norton Utilities"
+.SH NAME
+dada \- front end for the Dada Engine.
+.SH SYNOPSIS
+.B dada
+[\-Ddefinition [\-Ddefinition ...]] [\-o outfile] [\-s startsym] 
+.I filename
+.SH DESCRIPTION
+.B The Dada Engine
+is a programmable system for generating random text from a grammar. 
+Grammars are written in the
+.B pb
+language, which has a syntax vaguely similar to Backus-Naur Format (BNF),
+production systems or yacc(1).
+.PP
+.I dada
+is a shell script which serves as the preferred user interface to the Dada
+Engine. It is called with the name of a pb script and possibly some options.
+When called, it invokes the C preprocessor,
+.I cpp(1),
+on the script provided and any define options on the command line. The
+output of the preprocessor is piped into the pb interpreter,
+.I pb(1), along with other arguments.
+.PP
+.SH OPTIONS
+.TP
+.B -D\fIdef\fR
+Defines the preprocessor symbol \fIdef\fR.
+.TP
+.B -D\fIdef=value\fR
+Defines the preprocessor symbol \fIdef\fR to be equal to \fIvalue\fR.
+.TP
+.B -o \fIfilename\fR
+Redirects output to the file thus named; if not supplied, output will go to
+the standard output.
+.TP
+.B -r \fIrandomseed\fR
+Defines a seed for the random number generator used to select options.
+If this is not specified, the random number generator is seeded from the
+current system time.
+.TP
+.B -s \fIstartsym\fR
+Defines the 
+.I "start symbol,"
+the name of the rule which is initially evaluated. If not specified, this
+defaults to the first rule in the script.
+.PP
+.SH SEE ALSO
+cpp(1), sh(1),
+.I The pb Language
+.SH AUTHOR
+Andrew C. Bulhak <acb@dev.null.org>
+

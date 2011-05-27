@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# this is required because install-sh doesn't run properly from a
+# makefile on some systems (such as some Solaris 2.x systems)... :-/
+
+INSTALL="@INSTALL@"
+prefix=@prefix@
+exec_prefix=$prefix
+bindir=${prefix}/bin
+datadir=${prefix}/lib
+infodir=${prefix}/info
+mandir=${prefix}/man
+
+echo $INSTALL -s src/pb $bindir
+$INSTALL -s src/pb $bindir
+echo $INSTALL dada $bindir
+$INSTALL dada $bindir
+echo $INSTALL -m 0644 doc/dada.info $infodir
+$INSTALL -m 0644 doc/dada.info $infodir
+echo $INSTALL -m 0644 include/*.pbi ${datadir}/dada/include
+$INSTALL -m 0644 include/*.pbi ${datadir}/dada/include
+echo $INSTALL -m 0644 man/*.1 ${mandir}/man1
+$INSTALL -m 0644 man/*.1 ${mandir}/man1
+echo "Installation completed."

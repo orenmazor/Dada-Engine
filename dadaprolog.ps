@@ -1,0 +1,58 @@
+%!PS
+%%Creator: acb
+%%CreationDate: July 11, 1995
+
+%% This is code for resolving recursive grammars in PostScript.
+%% This code is part of the Dada Engine and copyright of Andrew C. Bulhak
+%% You may use, distribute and modify this code in any way provided that
+%% this copyright notice remains intact.
+
+/bd {bind def} bind def
+
+% choose an element from an array at random
+% syntax: [array] choose elem
+
+/choose {
+  dup length rand exch mod get
+} bd
+
+% concatenate an array of strings into a string
+% [array] strcat (str)
+/strcat {
+  dup 
+} bd
+
+% syntax: name value conddef -
+
+/conddef {
+  1 index where { pop pop pop } { def } ifelse
+} bd
+
+% (str) n repeat [array]
+
+/rep {
+  dup 1 1 3 -1 roll {
+    pop exch dup 3 -1 roll
+  } for
+  [ exch 1 add 1 roll ] exch pop
+} bd
+
+% syntax: string star [strings]
+
+/star {
+  0 { rand 5 mod 1 le {exit} if 1 add } loop
+  rep
+%  dup array exch 1 1 3 -1 roll
+%  { 1 sub 1 index exch 3 index put } for
+%  exch pop
+} bd
+
+/plus {
+  1 { rand 5 mod 1 le {exit} if 1 add } loop
+  rep
+%  dup array exch 1 1 3 -1 roll
+%  { 1 sub 1 index exch 3 index put } for
+%  exch pop
+} bd
+
+%% End of Dada Engine prologue

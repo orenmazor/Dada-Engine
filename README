@@ -1,0 +1,63 @@
+The Dada Engine  Release 1.01
+-----------------------------
+
+The Dada Engine is a system for the nondeterministic generation
+of ASCII data from grammars using recursive transition networks; or,
+in English, it is a system for generating random text using rules.
+Rules are specified in a language named pb, which looks a little like
+yacc, only a good deal more bogus.  The language is documented in the 
+Dada Engine manual which is supplied in Texinfo and PostScript formats.
+
+Release 1.01 is a bugfix release which fixes a problem with regular
+expression substitutions in 1.0.  Nothing else is changed.
+
+Compiling and installing
+------------------------
+
+Firstly, run the shell script named "configure" in the Dada Engine
+distribution directory.  This will check the characteristics of your
+system and (hopefully) set up the makefiles and headers in a way that
+will work.  configure, by default, sets the installation directories
+in which the Dada Engine will be installed to /usr/local; if you
+wish to install the Dada Engine elsewhere, you can specify a different
+location by running configure with the "--prefix=pathname" argument,
+i.e., "./configure --prefix=$HOME" will install the system in your
+home directory.
+
+Then run "make" in the distribution directory; this will compile the
+Dada Engine.  Afterwards, for it to properly work, you must install it
+by running "make install".
+
+Sample scripts
+--------------
+
+Several sample scripts are provided in the `scripts' subdirectory.
+These include:
+
+	brag.pb*	A SubGenius brag generator
+	crackpot.pb	A crackpot rant generator
+	eqn.pb		A generator of bogus equations (in LaTeX format)
+	exam.pb		A script to generate intimidating-looking but bogus 
+			examination questions.  (unfinished)
+	legal.pb*	A script to generate legalese.
+	loop.pb*	A script that produces itself as output
+	manifesto.pb	A manifesto generator
+	pomo.pb		The Postmodernism Generator; now outputs in any
+			format supported by the format library
+	silly-word.pb	A silly word generator
+	spout.pb*	The SubGenius Profunditied Generation Matrix
+	
+
+Acknowledgements
+----------------
+
+I am grateful to Mitchell Porter for testing the language and coding
+several of the example scripts, to the Department of Computer Science
+at Monash University for facilities and support, to Jamie Cameron for 
+his part in the conspiracy to develop this system and to Brandon Long 
+and kristin buxton for their help with getting the Dada Engine to work 
+with Solaris 2.x.
+
+Andrew C. Bulhak
+acb@dev.null.org
+45 Discord 3162

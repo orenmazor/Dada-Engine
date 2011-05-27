@@ -1,0 +1,18 @@
+This is the 1.01 release of the Dada Engine.
+
+1.01 is a bugfix release, which fixes a problem with regular
+expression substitutions in 1.0.
+
+This program has been gotten to compile successfully on the following
+platforms:  Linux, MIPS ULTRIX, Irix 5.3, Solaris 2.x and Digital UNIX 3.2.  
+Your mileage may vary.
+
+Under some systems, such as ULTRIX and Solaris, the installation script 
+("make install") may not work properly.  If this is the case, run the
+"inst" script that is created, with "sh inst".
+
+If you have problems making it, try using GNU make.  SGI's make, for
+example, had some problems.
+
+  acb
+  Chaoflux 3162

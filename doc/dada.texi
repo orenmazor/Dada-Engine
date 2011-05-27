@@ -1,0 +1,1193 @@
+\input texinfo  @c -*-texinfo-*-
+@comment %**start of header
+@c Copyright (C) 1995 Andrew C. Bulhak
+@c any attempt to make a printed manual of this will probably result in a mess
+@setfilename dada.info
+@settitle The Dada Engine
+@setchapternewpage odd
+@c %**end of header
+
+@set EDITION 1.0
+@set VERSION 1.0
+@set UPDATED Chaoflux 3162
+
+@iftex
+@finalout
+@end iftex
+
+@ifinfo
+@format
+START-INFO-DIR-ENTRY
+* The Dada Engine: (dada).      A tool for generating random text
+END-INFO-DIR-ENTRY
+@end format 
+
+@end ifinfo
+
+@titlepage
+@title The Dada Engine
+@subtitle version @value{VERSION}
+@subtitle @value{UPDATED}
+@author by Andrew C. Bulhak
+@page
+@vskip 0pt plus 1filll
+Copyright @copyright{} 1995, 1996 Andrew C. Bulhak
+
+Permission is granted to make and distribute verbatim copies of
+this manual provided the copyright notice and this permission notice
+are preserved on all copies.
+
+Permission is granted to copy and distribute modified versions of this
+manual under the conditions for verbatim copying, provided also that
+the entire resulting derived work is distributed under the terms of a
+permission notice identical to this one.
+
+Permission is granted to copy and distribute translations of this manual
+into another language, under the above conditions for modified versions.
+@end titlepage
+
+@node Top, Basics, (dir), (dir)
+
+@ifinfo
+
+@top Introduction
+@cindex introduction
+
+This manual describes version 1.0 of the Dada Engine, 
+a package for generating random text from a specification,
+including the pb language, in which specification scripts
+are written.
+
+
+@end ifinfo
+
+@menu
+* Basics::                      Concepts fundamental to the Dada Engine.
+* The pb Language::             The language in which grammars are written
+* The Standard Library::        Predefined rules which are supplied with the 
+                                Dada Engine
+* In Practice::                 Practical advice on using the Dada Engine
+
+* Revision History::            Changes to the Dada Engine
+* Acknowledgments::             Those who have helped
+* To Do::                       A brief wish list
+@end menu
+
+@node Basics, The pb Language, Top, Top
+@chapter Basics
+
+The Dada Engine is a system for the generation of text from a
+specification.  
+The specification is a text file containing @dfn{rules} in the
+form of a (somewhat augmented and/or bogotified) grammar.
+These files are fed to the Dada Engine, which handles (or evaluates) 
+them and emits the resulting text.
+
+@menu
+* Overview::                    How does the Dada Engine work?
+* The Evaluation Process::      What happens when the Dada Engine is run?
+@end menu
+
+@node Overview, The Evaluation Process, Basics, Basics
+@section Overview
+
+The Dada Engine is based on the principle of 
+@dfn{recursive transition networks}, or @dfn{recursive grammars}.
+A recursive transition network (RTN) is a diagram which shows how a 
+task, such as the construction of a sentence, may be carried out.
+A RTN consists of paths which may be followed and of operations along
+these paths which must be carried out.  For example, the following
+RTN defines how to construct one type of sentence:
+
+@example
+@group
+sentence:                     +-----------+
+                            +>| adjective |>+
+          +-------------+   | +-----------+ | +------+  +------+
+(start)->-| preposition |->-+------->-------+>| noun |--| verb |-(end)
+          +-------------+                     +------+  +------+
+@end group
+@end example
+
+If one follows the network from the start to the end, one passes through
+boxes representing the various elements which make up the sentence in 
+sequence: first a preposition, then an optional adjective, then a noun
+and then a verb.  After the preposition, the network branches into two
+paths, one of which leads to the adjective and the other which bypasses
+it and goes straight on to the noun.  One may take either path in the 
+course of constructing a sentence. Nouns, verbs and the like
+could be represented by similar RTNs; a RTN for an adjective follows:
+
+@example
+@group
+adjective:       +---------+
+             +---| "large" |--+
+             |   +---------+  |
+             |   +---------+  |
+(start) -->--+---| "green" |--+-->-- (end)
+             |   +---------+  |
+             |   +---------+  |
+             +---| "round" |--+
+                 +---------+
+@end group
+@end example
+
+These recursive transition networks are represented in text as rules;
+the two networks above would be written as:
+
+@example
+sentence: pronoun [ adjective | "" ] noun verb ;
+
+adjective: "large" | "green" | "round" ;
+@end example
+
+These would be part of the @dfn{grammar} defining the space of possible
+sentences.
+
+A recursive transition network may call itself, either directly or indirectly.
+Thus, things like the following are possible:
+
+@example
+verb: "said `" sentence "'" ;
+
+adjective: "large" | "green" | "round" | "very " adjective ;
+@end example
+
+The first rule above calls the @code{sentence} rule which called it;
+the second rule may, as one of its options, call itself, prepending
+the word "very" to its output.  
+(Note that in reality one would not write a pair of rules such as 
+the @code{sentence} and @code{verb} rules above; in this case, the two
+rules would keep calling each other and never finish.  In reality, one 
+should define more alternatives to break the cycle.)
+
+To define a system of RTNs or rules to the Dada Engine, write it in
+the notation above (the language known as @code{pb}) in an ASCII text file;
+this file is known as a @dfn{script}.
+As well as recursive transition networks, a Dada Engine script may contain 
+other practical functions, such as mappings, transformations and variables.
+See Chapter 2 for more information.
+
+@node The Evaluation Process, , Overview, Basics
+@section The Evaluation Process
+
+When you start the Dada Engine, you do so with the @code{dada} command,
+like so:
+
+@example
+@cartouche
+% dada myscript.pb
+@end cartouche
+@end example
+
+The command @code{dada} first pipes your script (in this case 
+@samp{myscript.pb}) through the C preprocessor; this allows you to include
+preprocessor macros, conditional definitions and external libraries of 
+rules.  The output of the preprocessor is then sent to @code{pb}, a program
+which reads in and evaluates the rules.
+
+The @code{pb} command reads the complete input before it emits anything.
+Once it has read everything, it evaluates the initial rule (also known as
+the @dfn{start symbol}); in turn, this causes any rules invoked from the 
+initial rule to be evaluated.
+Unless a start symbol is specified on the command line, 
+the first rule read that is not defined as a @dfn{resource rule}
+becomes the start symbol.
+
+As the rules are evaluated, the text generated is appended to a buffer
+in memory; once everything has been evaluated, the buffer's contents are
+emitted.
+
+The @code{dada} command accepts several command-line options.  
+See the UNIX manual page supplied for details.
+
+@node The pb Language, The Standard Library, Basics, Top
+@chapter The pb Language
+
+@menu
+* Lexical Elements::    How the building blocks of pb work
+* Grammars and Rules::  The basics of pb grammars
+* Transforming Text::   Features for performing operations on text
+* Embedded Code::       Imperative code which may be embedded in rules
+@end menu
+
+@node Lexical Elements, Grammars and Rules, The pb Language, The pb Language
+@section Lexical Elements
+
+@subsection Comments
+
+Comments in pb are handled as in C++ and Java.  A comment of any length
+may be enclosed between the sequence @samp{/*} and the sequence @samp{*/}.
+Alternatively, one-line comments may be preceded by @samp{//}.
+The following are valid comments:
+
+@example
+@group
+/* This is a two-line comment. 
+See? */
+
+// You are not expected to understand this.
+@end group
+@end example
+
+@subsection Identifiers
+
+An identifier in pb is any sequence of letters, digits, underscores and 
+hyphens which starts with a letter or underscore.  
+Identifiers are case-sensitive.
+
+The following are valid identifiers:
+
+@example
+@group
+futplex
+
+sort-of-vague-ambiguous-noun
+
+_298R
+@end group
+@end example
+
+@subsection Literal strings
+
+A literal string in pb is any sequence of characters embedded in quotes.
+Unlike in C, a string may contain unquoted newlines.  The backslash 
+character serves a similar function as in C.  The following sequences
+have special meanings:
+
+@table @code
+@item \\"
+Double quote
+@item \\n
+Newline
+@item \\t
+Tab
+@item \\v
+Vertical tab
+@item \\b
+Backspace
+@item \\r
+Carriage return
+@item \\f
+Form feed
+@item \\a
+Audible alert
+@end table
+
+@node Grammars and Rules, Transforming Text, Lexical Elements, The pb Language
+@section Grammars and Rules
+
+@menu
+* Atoms::               Rules are comprised of atoms
+* Rules::               Declaring grammatical rules
+* Variables::           Setting and reading variables
+* Advanced Features::   Parametric rules and indirection
+@end menu
+
+@node Atoms, Rules, Grammars and Rules, Grammars and Rules
+@subsection Atoms
+
+@dfn{Atoms} are the building blocks of rules. Each atom is a self-contained
+element which performs a function, usually generating text.
+
+Atoms are divided into several types. These are:
+@menu
+* Literal Text::        Atoms which return their contents
+* Symbols::             Atoms which cause rules to be evaluated
+* Code Blocks::         Blocks of embedded code which is executed
+@end menu
+
+@node Literal Text, Symbols, Atoms, Atoms
+@subsubsection Literal Text
+
+A @dfn{literal text} atom consists of a sequence of characters enclosed by
+double quotes. Double quotes, newlines and tabs may be included in
+literal text using C-style backslash escapes.
+
+Examples:
+
+@example
+@group
+        "foo"
+
+        "\"Come into my parlour,\" said the spider to the fly."
+
+        "Friends, Romans, Countrymen,\nLend me your ears"
+@end group
+@end example
+
+@node Symbols, Code Blocks, Literal Text, Atoms
+@subsubsection Symbols
+
+A @dfn{symbol} is an atom which names a rule to be evaluated. A symbol name
+may be any sequence of letters, digits, underscores and hyphens with
+the restriction that the first character must be a letter or an underscore.
+Symbol identifiers are not enclosed by quotes. The following are examples of 
+possible symbol names:
+
+@example
+@group
+        foo
+
+        noun2
+
+        abstract-adjective
+@end group
+@end example
+
+@node Code Blocks,  , Symbols, Atoms
+@subsubsection Code Blocks
+
+A pb rule may contain blocks of embedded code. This code allows
+expressions to be evaluated and variables to be updated. 
+@xref{Embedded Code} for details.
+
+A block of embedded code is enclosed by curly brackets.
+
+@node Rules, Variables, Atoms, Grammars and Rules
+@subsection Declaring grammatical rules
+
+In pb, the form of a rule declaration is:
+
+@display
+@group
+rule::          @i{<rulename>} `:' @i{<options>} `;'
+
+options::       @i{<options>} '|' @i{<option>}
+                | @i{<option>}
+
+option::
+                | @i{<atom>} @i{<option>}
+@end group
+@end display
+
+rulename is a symbol which is assigned to the rule. 
+
+If a rule has several options, one will be selected randomly at the time of
+evaluation. The atoms of the chosen option will be evaluated in sequence and
+their results joined into a string, which shall be returned as the result of
+the rule.
+
+For example, in the following grammar:
+
+@example
+@group
+sentence: "The ball is " colour "." ;
+
+colour: "red"
+        | "green"
+        | "blue"
+;
+@end group
+@end example
+
+@code{colour} will evaluate to either "red', "green" or "blue"; hence,
+@code{sentence} will evaluate to "The ball is red.", "The ball is green.", or
+"The ball is blue."
+
+If a rule has several options, the same option will never be chosen twice in
+immediate succession.
+
+@node Variables, Advanced Features, Rules, Grammars and Rules
+@subsection Variables
+
+pb allows you to use @dfn{variables}. These may be used to store text (or,
+usign embedded code, integers). The following atom operators may be used to
+handle variables:
+
+@table @code
+@item var=atom
+Evaluate @code{atom}, setting the variable named @code{var} to the result,
+and return the result.
+@item var<<atom
+If @code{var} is not set, evaluate @code{atom} and set @code{var} 
+to the result, returning it; else return the present value of @code{var}.
+@item $var
+Return the present value of the variable named @code{var}.
+@end table
+
+@node Advanced Features, , Variables, Grammars and Rules
+@unnumberedsubsec The * and + operators
+
+To allow grammars to be written more simply, pb includes shortcuts for
+repeatedly invoking rules. When an atom is followed by the character *
+(also known as the @dfn{Kleene star}),
+pb will evaluate this atom zero or more times (determined at random) and
+return the results, concatenated. Thus, the rule:
+
+@example
+        foo: bar* ;
+@end example
+
+has a notionally similar function to :
+
+@example
+        foo: bar foo
+             | /* nothing */ ;
+@end example
+
+The + operator has a similar function; in this case, however, the atom is
+evaluated at least once. The following rule definition:
+
+@example
+        foo: bar+ ;
+@end example
+
+has a notionally similar function to :
+
+@example
+        foo: bar foo
+             | bar ;
+@end example
+
+@unnumberedsubsec Parametric rules
+
+A @dfn{parametric rule} is a rule which, when evaluated, takes parameters.
+This rule is declared with one or more parameter names in brackets after its
+name, and is invoked in a similar fashion. When the rule is evaluated, the
+parameters with which it is called are bound to the formal parameters, and
+references to the formal parameters are replaced with them. For example,
+if the following rule is defined:
+
+@example
+        i-am(my-name):  "Hello; my name is " my-name "." ;
+@end example
+
+Then if it is invoked with the atom @code{i-am("Bob")}, it will yield the
+result: 
+
+@example
+@print{} "Hello; my name is Bob."
+@end example
+
+If a rule has several parameters, they are separated with spaces.
+
+Note that in the current release there are some restrictions on the use of 
+parameters in expressions; parameters cannot be accessed from embedded
+code or in inline choices.
+
+@unnumberedsubsec Inline choices
+
+As a short-cut, pb allows random choices to be declared inline in a rule,
+without declaring a separate rule for them. For instance, the rule declaration:
+
+@example
+foo: bar [ xyzzy | plugh ] baz ;
+@end example
+
+has the same result as the following two rules:
+
+@example
+@group
+foo: bar quux baz ;
+
+quux: xyzzy | plugh ;
+@end group
+@end example
+
+only the second form defines an additional rule, @code{quux}, to handle the
+choice.
+
+Inline choices should be used where a 'once-off' choice is needed; in such 
+cases, they help to eliminate cluttering of the rule-base and make the script
+more readable. If a choice will be needed more than once, it is a better idea
+to declare it as a rule.
+
+@unnumberedsubsec Resource rules
+
+By default, when the Dada Engine evaluates a script, it resolves the 
+first rule it sees.  If you include a file at the start of the script
+using the C preprocessor, and this file contains rules, the first rule in
+the file will be selected as the initial rule (or start symbol). 
+This, in most cases, is inconvenient.
+
+To bypass this, the Dada Engine allows you to declare rules as 
+@dfn{resource rules}.  A resource rule is a rule which will not become
+the start symbol, even if the Dada Engine sees it before any other.
+Resource rules are declared by prepending their names with the
+@samp{%resource} keyword; for example, the following code fragment:
+
+@example
+@group
+        %resource my_name:  "Bob" ;
+
+        output: "Hi! I'm " my_name "!" ;
+@end group
+@end example
+
+will print @samp{Hi! I'm Bob!}. The initial rule is @samp{output},
+because @samp{my_name} is flagged as being a resource and thus not
+eligible to be the initial rule.
+
+(Note that there's nothing preventing the user from explicitly
+invoking a resource rule as the initial rule by specifying it from
+the command line with the @samp{-s} switch.)
+
+@unnumberedsubsec Silenced atoms
+
+An atom may be @dfn{silenced} by preceding it with a question mark. For
+example, to assign the value "blah" to the variable @code{foo} without
+outputting it, one could write @code{?foo="blah"}. The effect is illustrated
+by the two sample rules below:
+
+@example
+@group
+foo:    "the"  colour=" green"  " dragon was"  $colour ;
+
+foo:    "the"  ?colour=" green"  " dragon was"  $colour ;
+@end group
+@end example
+
+The first rule would output "the green dragon was green", whereas the
+second rule would output "the dragon was green", as the assignment of
+" green" to @code{colour} is silenced and generates no output.
+
+@unnumberedsubsec Indirection
+
+Indirection allows the output of a rule to be used as the name of another
+rule. This is useful when the ranges of valid choices are influenced by a
+prior choice. For example, the following script:
+
+@example
+@group
+start:  sentence-about(animal) ;
+
+animal: "dog" | "cat" ;
+
+sentence-about(subject): @@subject " is a " subject ;
+
+dog: "Fido" | "Spot" ;
+
+cat: "Tiddles" | "Fluffy" ;
+@end group
+@end example
+
+may produce the sentences "Spot is a dog" or "Fluffy is a cat", but will
+never produce "Spot is a cat". When @code{sentence-about} is evaluated,
+@code{subject} is set to either "dog" or "cat"; when the first atom is
+evaluated, pb uses it as the name of a rule and either evaluates the rule
+named @code{dog} or the one named @code{cat}.
+
+@node Transforming Text, Embedded Code, Grammars and Rules, The pb Language
+@section Transforming Text
+
+There are two methods for transforming text: @dfn{mappings} and 
+@dfn{transformations}. Both are applied to an atom with the construct
+@code{atom>func}, where @code{func} is the name of the mapping or
+transformation.
+
+@menu
+* Mappings::            A way of mapping strings to other strings
+* Transformations::     Text transformations
+@end menu
+
+@node Mappings, Transformations, Transforming Text, Transforming Text
+@subsection Text mappings
+
+A mapping allows you to transform strings from one set into strings from
+another. Mappings use regular expressions, and thus one or more strings
+may be mapped to a string. In addition, mappings may be used to perform
+regular substitution on strings.
+
+Mappings take the following form:
+
+@display
+mapping::         @i{<mapping name>} ':' @i{<mapping options>} ";"
+
+mapping options:: @i{<mapping options>} @i{<mapping option>}
+                  | @i{<mapping option>}
+
+mapping option::  @i{<source>} "->" @i{<destination>}
+                  | @i{<string1>} "<-> @i{<string2>}
+                  | @i{<pattern>} "->" @i{<from>}"/"@i{<to>}
+@end display
+
+There are three forms of options; the first form maps a string or set of
+strings to a string, but not vice versa. 
+
+The second form maps bidirectionally between two strings; the option:
+
+@display
+        @i{"foo"} <-> @i{"bar"}
+@end display
+
+is equivalent to the two options:
+
+@example
+        "foo" -> "bar"
+        "bar" -> "foo"
+@end example
+
+The third form is used to perform simple sed-style regular expression
+substitutions. The substitution is performed on any string matching the
+regular expression to the left of the arrow; in it, all substrings matching 
+the regular expression in the second string are replaced with copies of the
+third string.
+
+Below are some examples of mappings:
+
+@example
+@group
+// map several personal names to the appropriate pronouns
+gender-pronoun:
+        "Alice" -> "she"
+        "Bob"   -> "he"
+        "Carol" -> "s/he" // Carol is an ambiguous name
+;
+@end group
+
+@group
+// map words and their opposites to each other
+
+opposite:
+        "dark" <-> "light"
+        "large" <-> "small"
+        "true" <-> "false"
+;
+@end group
+
+@group
+// a rule for deriving the plurals of words. Works in some cases.
+pluralise:
+        ".*y$" -> "y$"/"ies"
+        ".*s$" -> "$"/"es"
+        ".*" -> "$"/"s"
+;
+@end group
+@end example
+
+@node Transformations,  , Mappings, Transforming Text
+@subsection Text transformations
+
+Transformations are defined as follows:
+
+@display
+transformation::          @samp{%trans} @i{<transname>} `:' @i{<transform options>} ';'
+
+transform options::       @i{<transform option>} @i{<transform options>}
+                        | @i{<transform option>}
+
+transform option::        @i{<regex>} `:' @i{[address]} @i{<command>} `;'
+
+address::                 @i{<number>} @i{[',' <number>]}
+
+@end display
+
+regex is a literal string containing a regular expression to whose occurrences
+the transformation is to be applied. 
+
+address consists of a range of character positions in which positive numbers
+refer to displacements from the start of the string and negative ones from
+the end; -1 refers to the last character of a string.
+
+Each command may be followed by zero or more arguments, each of which is a
+quoted string. The available commands are:
+
+@display
+ d              delete the text in the address range
+ l              convert the text in the address range to lower case
+ s "from" "to"  replace all occurrences of the regular expression
+                `from' with the string `to'
+ u              convert the text in the address range to upper case
+@end display
+
+@node Embedded Code,  , Transforming Text, The pb Language
+@section Embedded Code
+
+In pb, blocks of code may be embedded in rules. These may return a result
+or not.
+
+A block of code consists of one or more statements, separated with semicolons.
+At present, there are only two types of statements: assignments and returns.
+An assignment evaluates an expression containing either integer literals 
+or integer variables and assigns the result to a variable. A return statement
+evaluates an expression as above and exits the block of code, returning the
+result.
+
+@menu
+* Expressions::         Expressions in which variables may be evaluated.
+* Assignments::         Assigning values to variables
+* Return Statements::   Returning results
+@end menu
+
+@node Expressions, Assignments, Embedded Code, Embedded Code
+@subsection Expressions
+
+In embedded code, an expression is a combination of operations which,
+when evaluated, yields a value.
+
+@menu
+* Expression Overview:: Overview of Expressions
+* Numeric Operators::   Operators for Numeric Values
+* Textual Operators::   Operators for Handling Text
+@end menu
+
+@node Expression Overview, Numeric Operators, Expressions, Expressions
+@subsubsection Overview of Expressions
+
+pb's embedded code supports two types of expressions: Numeric and textual
+expressions. Numeric expressions are expressions whose terms are integers.
+Textual expressions are expressions whose terms are sequences,
+or strings, of text.
+
+If an expression contains terms which evaluate to both integers and text, 
+the integer terms are first converted to text and it is treated as a 
+textual expression. Likewise, if the result of an expression is being
+returned to the enclosing grammatical rule, it is first converted to text.
+
+Operator precedence in arithmetic expressions is as in C, with 
+multiplication, division and modulo taking precedence over addition and 
+subtraction, and all operators being left-associative. Brackets may be used 
+to group terms.
+
+The terms of an expression may be other expressions, literal integers,
+literal strings (in double quotes) or variable names. 
+
+The following are valid expressions:
+
+@example
+                1+1
+
+                ((foo*2)-1)/bar
+
+                "two plus three equals "+(2+3)
+@end example
+
+The last expression evaluates to the text string, "two plus three equals 5".
+
+@node Numeric Operators, Textual Operators, Expression Overview, Expressions
+@subsubsection Operators for Numeric Values
+
+In pb, numeric expressions may involve the addition (+), subtraction (-), 
+multiplication (*), division (/), integer modulo (%), random number (..), 
+lesser (<<) and greater (>>) operators.
+
+The addition operator adds two integers; for example, @code{2+3} would
+evaulate to @code{5}. Similarly, the subtraction operator subtracts two
+integers, and the multiplication and division operators multiply and
+divide their arguments respectively. The modulo operator evaluates to the 
+remainder of dividing its first argument by its second; for example, 
+@code{5%2} would yield @code{1}.
+
+The random operator selects at random an integer from a range between two
+bounding values. It is written as @code{a..b}, where @code{a} is the lower
+bound and @code{b} is the upper. For example, the expression @code{2..5} would
+yield either 2, 3, 4 or 5, chosen at random.
+
+The lesser operator (written as @code{<<}) yields the lesser of its two 
+arguments; for instance, @code{2<<3} would evaluate to 2, as would
+@code{3<<2}. Similarly, the greater operator (written as @code{>>}) yields the
+greater of its two arguments.
+
+@node Textual Operators,  , Numeric Operators, Expressions
+@subsubsection Operators for Handling Text
+
+The concatenation operator, +, may be used in expressions to join strings
+of text; for example, @code{"foo" + "bar"} would yield, @code{"foobar"}.
+
+Additionally, rules may be invoked in expressions, yielding string terms; 
+to add a rule invocation as a term, add the rule name preceded by a '@@'.
+The following rules yield equivalent results:
+
+@example
+@group
+        sentence:       "The " noun " is green." ;
+
+        sentence:       "The " @{=@@noun@} " is green." ;
+
+        sentence:       @{="The " + @@noun + " is green." @} ;
+@end group
+@end example
+
+The first sentence invokes the @code{noun} rule directly; the second invokes
+it in a code block, returning its result as the result, which is then strung
+together with the literal strings @code{"The "} and @code{"is green."}. The
+third form concatenates the three strings wholly within a block of code,
+returning the complete result.
+
+@node Assignments, Return Statements, Expressions, Embedded Code
+@subsection Assigning values to variables
+
+To assign a value to a variable, one proceeds as in C.
+For example, the following statement increments @code{counter}:
+
+@example
+        counter = counter+1
+@end example
+
+@node Return Statements,  , Assignments, Embedded Code
+@subsection Returning results
+
+A @dfn{return statement} consists of a '=' sign followed by an expression.
+When the statement is executed, the expression is evaluated and its result
+converted to a string and returned.
+
+For example, the following rule will return the result "5":
+
+@example
+                five: @{ = 2+3 @} ;
+@end example
+
+@node The Standard Library, In Practice, The pb Language, Top
+@chapter The Standard Library
+
+The Dada Engine has the capability to include prepared files containing
+predefined rules, mappings and transformations.  This is useful, as it
+allows you to reuse code more easily.  In addition, the Dada Engine
+comes with a small library of standard rules which may be useful for
+use in scripts.
+
+@menu
+* Standard Mappings::           A few useful mappings and transformations
+* The Format Library::          A way to create output in various formats
+@end menu
+
+@node Standard Mappings, The Format Library, The Standard Library, The Standard Library
+@section Standard Mappings
+
+A few commonly used mappings and transformations are provided in
+the file @samp{stdmap.pbi}.  These mappings include:
+
+@table @code
+@item upcase   
+Convert text to uppercase.  For example, @samp{"foo">upcase} would yield 
+@samp{FOO}
+@item upcase-first
+Convert the first character of text to uppercase.  For example, 
+@samp{"foo bar">upcase-first} would yield @samp{Foo bar}.
+@end table
+
+@node The Format Library,  , Standard Mappings, The Standard Library
+@section The Format Library
+
+The format library is a set of standard rules which handle various aspects
+of output for various formats.  It contains definitions of these rules for
+various output formats (currently supported formats are plain text, HTML
+and @code{troff}, but more can be added easily).
+
+To use these rules in your scripts, first include the file @samp{format.pbi} in
+your script, by including the following line:
+
+@example
+        #include <format.pbi>
+@end example
+
+Then, use the special rules described below to do formatting.
+
+If you use the format library, you can make your script output
+in a different format by defining the preprocessor symbol representing
+the output format.  Currently, defining HTML will cause the output to be
+formatted in HTML, otherwise it will be plain text.
+
+Below are documented the various special formatting rules currently 
+implemented:
+
+@menu
+* PROLOGUE::            Format-specific document prologue
+* EPILOGUE::            Format-specific document epilogue
+* TITLE::               Document title
+* AUTHOR::              Document attribution
+* AUTHOR_INST::         Document attribution, with author and institution name
+* SECTION::             Automatically numbered section heading
+* FOOTNOTE::            Automatically numbered footnote
+* BODY::                Start of body text
+* BRK::                 Line break             
+* PBRK::                Paragraph break             
+* BOLD::                Set text in bold type
+* ITALIC::              Set text in italic type
+@end menu
+
+@node PROLOGUE, EPILOGUE, The Format Library, The Format Library
+@subsection PROLOGUE
+
+The @code{PROLOGUE} rule should be invoked before any other rules which 
+may emit any output.  It outputs whatever may be necessary
+at the start of a document in the format.
+
+@node EPILOGUE, TITLE, PROLOGUE, The Format Library
+@subsection EPILOGUE
+
+The @code{EPILOGUE} rule should be invoked after all other rules which may
+emit any output.  It outputs whatever may be necessary at the end of 
+a document in the format.
+
+@node TITLE, AUTHOR, EPILOGUE, The Format Library
+@subsection TITLE
+
+The @code{TITLE} rule is used optionally at the start of a document for
+outputting a title.  This rule is invoked with one argument; the title
+of the document to be emitted.  It must be called before any body text is 
+emitted; i.e.,
+
+@example
+        TITLE("The Passion Considered as a Mornington Crescent Game")
+@end example
+
+@node AUTHOR, AUTHOR_INST, TITLE, The Format Library
+@subsection AUTHOR
+
+The @code{AUTHOR} rule is used optionally at the start of a document 
+(after @code{TITLE} but before @code{BODY}) for emitting a formatted 
+author name; i.e.,
+
+@example
+        AUTHOR("J. R. Dobbs")
+@end example
+
+@node AUTHOR_INST, SECTION, AUTHOR, The Format Library
+@subsection AUTHOR_INST
+
+The @code{AUTHOR_INST} rule is used optionally at the start of a document 
+(after @code{TITLE} but before @code{BODY}) for emitting a formatted 
+byline, including an author name and institution; i.e.,
+
+@example
+        AUTHOR_INST("M. Faustroll" "Institute de Pataphysique")
+@end example
+
+@node SECTION, FOOTNOTE, AUTHOR_INST, The Format Library
+@subsection SECTION
+
+The @code{SECTION} rule is used within the document body to emit an 
+automatically numbered section heading; i.e.,
+@example
+        page7: SECTION("THE REVELATION") 
+                "Just prior to the decade of the nineteen-sixties, @dots{}"
+@end example
+
+@node FOOTNOTE, BODY, SECTION, The Format Library
+@subsection FOOTNOTE
+
+The @code{FOOTNOTE} rule is used within text to insert an automatically
+numbered footnote.  A footnote marker is inserted into the text where
+the rule is invoked, and the text of the footnote is inserted further 
+down with any other footnotes.  Example:
+
+@example
+        "Whereupon, by the law of negative reversal"
+        FOOTNOTE("The LAW OF NEGATIVE REVERSAL states that @dots{}")
+@end example
+
+@node BODY, BRK, FOOTNOTE, The Format Library
+@subsection BODY
+
+The @code{BODY} rule is invoked before any body text is emitted.
+It causes any formatting code required for the body text to be emitted.
+
+@node BRK, PBRK, BODY, The Format Library
+@subsection BRK
+
+The @code{BRK} rule is invoked to generate a line break.  It emits
+whatever corresponds to a line break in the output format.
+
+@node PBRK, BOLD, BRK, The Format Library
+@subsection PBRK
+
+The @code{PBRK} rule is invoked to generate a paragraph break.  It emits
+whatever corresponds to a paragraph break in the output format.
+
+@node BOLD, ITALIC, PBRK, The Format Library
+@subsection BOLD
+
+The @code{BOLD} rule causes its parameter to be set in bold, if this
+is supported in the current output format; e.g.,
+
+@example
+        "This sentence is about " BOLD("these three words") ". "
+@end example
+
+@node ITALIC, , BOLD, The Format Library
+@subsection ITALIC
+
+The @code{ITALIC} rule causes its parameter to be set in italics, if this
+is supported in the current output format; e.g.,
+
+@example
+        "Half a bee, philosophically, must " ITALIC("ipso facto")
+        "half not be."
+@end example
+
+@node In Practice, Revision History, The Standard Library, Top
+@chapter In Practice
+
+@menu
+* Writing a Script::    How to go about creating a Dada Engine script
+* Idioms and Devices::  Common tricks of the trade
+@end menu
+
+@node Writing a Script, Idioms and Devices, In Practice, In Practice
+@section Writing a Script
+
+At first, the task of writing a script to generate random text in any
+complex genre with enough flexibility to be interesting may seem 
+daunting.  Looking at the size of some complex scripts -- such as the
+Postmodernism Generator -- may not help to shake this sensation.
+But, as usual, there are practical techniques which help in this task.
+
+One approach to the task of writing a script is the @emph{bottom-up} approach.
+Basically, this means starting small and progressively enhancing and
+enlarging the script.  For example, if you're writing a script to 
+generate journal articles, start by writing a rule to generate sentences,
+and then go on to paragraphs, sections and finally the whole article.
+Whilst enhancing the script, add rules for generating titles, citations,
+footnotes and the like, as well as any new sentence forms, terms and 
+other elements that you think of.
+
+Another approach is to take existing material in the genre, write it in
+and @emph{generalise} it.  For example, if you are writing a script to
+generate travesties of technical papers, you may want to put in a 
+sentence fragment such as ``can be proven to be finite''.  If you do so,
+it may be an idea to think of other terms that may be substituted for
+``finite'' in this context; for example, ``NP-complete'' or ``valid''
+(or even ``infinite'').  This approach, if used carefully, can be very
+effective.
+
+Finally, keep in mind that every new alternative you add to a rule
+decreases the probabilities of the other alternatives being selected.
+If you think that one alternative is not quite appropriate, it may be 
+a good idea to delete it.
+
+@node Idioms and Devices, , Writing a Script, In Practice
+@section Idioms and Devices
+
+The following are devices which I have commonly employed in scripts.
+You may find them useful as well.
+
+@unnumberedsubsec Optionally emitting text
+
+If you wish to either emit a string or not emit it, with a probability of 0.5
+either way, the formation for this is:
+
+@example
+[""|"@emph{your string goes here}"]
+@end example
+
+@unnumberedsubsec Accepting user parameters
+
+While the Dada Engine currently has no facilities for interaction, 
+there is a way to specify parameters at run time.  This can be done 
+using the C preprocessor.  For example, if you wish to write a script
+that will use a person's name, specified by the user, in its output,
+you can do something like the following:
+
+@example
+blame:  "It's all " NAME "'s fault! " ;
+@end example
+
+@code{NAME} is not specified as a rule, but is left undefined; when the
+script is run, the user defines it on the command line, using a form like:
+
+@display
+dada -DNAME=\"Fred\"
+@end display
+
+If no name is defined on the command-line, the script fails with an error;
+to bypass this, you can supply a default name beforehand, using preprocessor
+directives, as follows:
+
+@example
+#ifndef NAME
+#define NAME "Bob"
+#endif
+@end example
+
+The use of the preprocessor is not limited to substituting strings into
+the output; conditional defines may be used to selectively enable and
+disable parts of rules.
+
+@example
+factoid:  "they are watching us" | "things go better with Coke"
+        | "the woodpecker never bashes his brains out"
+        | ["love"|"greed"|"angular momentum"] " makes the world go round"
+#ifdef UNIX
+        | "motd is not a daemon but a text file"
+#endif
+;
+@end example
+
+In this example (excerpted from an actual script), the user can
+specify beforehand whether or not the output should be able to contain
+references to UNIX(R) concepts; thus the output may be tailored to a 
+non-technical audience.
+
+For more information, see the documentation on @code{cpp}, the C 
+preprocessor.
+
+@unnumberedsubsec Remembering choices
+
+There may be times when you want a script to make a choice for a rule
+only once every time it is run, and to use that choice every time the
+rule is subsequently invoked.  This can be done using variables.
+For example, the following pair of rules selects a value for the rule
+@code{name} the first time it is invoked, and returns the name previously
+selected at each subsequent invocation:
+
+@example
+@group
+name:   v-name<<new-name ;
+
+new-name: "Alice" | "Bob" | "Carol" ;
+@end group
+@end example
+
+Here, the rule @code{name} @dfn{conditionally defines} the variable
+@code{v-name}; if @code{v-name} is undefined, the rule @code{new-name}
+is invoked and its result is assigned to @code{v-name} and returned;
+otherwise the current value of @code{v-name} is returned as the result
+of @code{name} without invoking @code{new-name}.
+
+@node Revision History, Acknowledgments, In Practice, Top
+@appendix Revision History
+
+1.0:  Released 19 Feb 1996. 
+Error line/filename tracking now works properly with files
+containing included files.  Things which didn't work on Solaris 2.0
+have been (mostly) fixed.  The "BRK" rule has been added to the format 
+library.  A lot has been added to the documentation.
+
+1.0b1:  Released 5 Jan 1996.  The first limited release of the 
+Dada Engine.
+
+pb 0.91: Released in early 1995.  A much earlier, and more primitive,
+incarnation of what became the Dada Engine.
+
+@node Acknowledgments, To Do, Revision History, Top
+@appendix Acknowledgments
+
+I am grateful to everybody who helped with the development and 
+testing of this package, in particular to Mitchell Porter, Jamie Cameron,
+Brandon Long and kristin buxton.
+
+The inspiration for what was to become the Dada Engine came to me in 1994 
+when I read @cite{Godel, Escher, Bach: an Eternal Golden Braid} by 
+Douglas Hofstadter; in particular, when I read the section titled
+``A Little Turing Test'', on page 621.  
+
+The initial application of the Dada Engine, the Postmodernism Generator,
+is included with this distribution, and may also be accessed through the
+World Wide Web at the following URL:
+
+@code{http://www.cs.monash.edu.au/cgi-bin/postmodern}.
+
+
+@node To Do,  , Acknowledgments, Top
+@appendix To Do
+
+Currently, the pb language is a bit inelegant; it contains a number
+of different features, hacked on when they were needed.  At some stage
+in the future, I intend to rewrite the system, replacing the language 
+with a similar, but more elegant, language.  
+This is likely to be a Turing-complete functional language with 
+a format similar to the pb language.  I would aim to include 
+some sort of ML-like pattern-matching capability in this language, as well
+as a number of data types, such as sets and lists, which would be useful
+for generating certain types of text.
+
+In the shorter term, the current Dada Engine can be further enhanced; 
+one feature which would be useful and which I intend to add is operators for 
+changing the probabilities of options being selected.  Also, a system for
+compiling Dada Engine scripts into stand-alone programs in a language 
+such as C or PostScript is an option which I may explore.
+
+@contents
+@bye

@@ -1,0 +1,80 @@
+#  directories where things are installed go below
+
+CC	= @CC@
+YACC	= @YACC@
+LEX	= @LEX@
+RANLIB	= @RANLIB@
+
+# the pb language library
+LIBPB_OBJS = check.o dict.o dstring.o dump.o machine.o map.o ptrlist.o \
+	resolve.o resstack.o rtn.o strfunc.o transform.o variables.o
+
+PB_OBJS	= pb.o y.tab.o lex.yy.o wrap.o
+#PBC_OBJS =  pbc.o y.tab.o lex.yy.o rtn.o strfunc.o dstring.o check.o map.o \
+#	 ptrlist.o variables.o transform.o machine.o ${REGEX} ${EXTRAOBJS} \
+#	emit_ps.o resolve.o dump.o
+#CFLAGS	= -g ${INCDIRS} ${DEFINES}
+CFLAGS	= -g @REGEXP_INCLUDE@ ${DEFINES}
+
+all:	pb
+
+libpb.a:	$(LIBPB_OBJS)
+	ar ruv libpb.a $(LIBPB_OBJS)
+	$(RANLIB) libpb.a
+
+pb:	$(PB_OBJS) libpb.a
+	$(CC) -o pb ${PB_OBJS} -L. -lpb @LIBS@ @REGEXP_LIB@ 
+
+#pbc:	$(PBC_OBJS)
+#	$(CC) -o pbc $(PBC_OBJS)
+
+pb.o:	pb.c rtn.h check.h map.h transform.h
+
+emit_ps.o:	emit_ps.c rtn.h map.h transform.h
+
+y.tab.o:	y.tab.c rtn.h resolve.h check.h map.h ptrlist.h transform.h machine.h
+
+lex.yy.o:	lex.yy.c rtn.h strfunc.h y.tab.h map.h transform.h machine.h
+
+rtn.o:	rtn.c rtn.h ptrlist.h
+
+strfunc.o:	strfunc.c strfunc.h
+
+dstring.o:	dstring.c dstring.h
+
+y.tab.c:	parser.y
+	${YACC} -d -v parser.y
+
+lex.yy.c:	lexer.x
+	${LEX} lexer.x
+
+dump.o:	dump.c rtn.h map.h transform.h
+
+resolve.o:	resolve.c resolve.h rtn.h dstring.h map.h ptrlist.h transform.h machine.h variables.h
+
+check.o:	check.c check.h rtn.h map.h ptrlist.h
+
+map.o:	map.c map.h
+
+ptrlist.o: 	ptrlist.c ptrlist.h
+
+variables.o:	variables.c
+
+transform.o:	transform.c transform.h
+
+machine.o:	machine.c machine.h variables.h strfunc.h rtn.h resolve.h
+
+resstack.o:	resstack.c resstack.h dict.h
+
+dict.o:		dict.c dict.h
+
+wrap.o:		wrap.c
+
+
+lextest:	lextest.o lex.yy.o strfunc.o
+
+lextest.o:	lextest.c y.tab.h rtn.h map.h transform.h
+
+clean:
+	rm -f *~ *.o lex.yy.* y.* pb core lextest *.a
+

@@ -1,0 +1,32 @@
+#!/bin/sh
+# User interface/wrapper for the Dada Engine
+# Author:    acb
+# Commenced: 14-7-1995
+
+PBDIR="@PBDIR@"
+DADAROOT="@DADAROOT@"
+CPP="@_CPP@"
+
+#CPP="/lib/cpp"
+#CPPARGS="-lang-c++"
+FILES=""
+#PB="`dirname $0`/pb"
+#INCLUDE="-I`dirname $0`/include -I$DADAROOT/include"
+PB="${PBDIR}/pb"
+INCLUDE="-I${DADAROOT}/include"
+
+while test $# -gt 0
+do
+  case $1 in
+    -D*) CPPARGS="$1 $CPPARGS";;
+    -o) PBARGS="$PBARGS $1 $2"; shift;;
+    -p) PBARGS="$PBARGS $1";;
+    -r) PBARGS="$PBARGS $1 $2"; shift;;
+    -s) PBARGS="$PBARGS $1 $2"; shift;;
+    -w) PBARGS="$PBARGS $1 $2"; shift;;
+    *) CPPARGS="$CPPARGS $1";;
+  esac
+  shift
+done
+
+($CPP $INCLUDE $CPPARGS 2>/dev/null) | $PB $PBARGS
