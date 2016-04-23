@@ -13,9 +13,9 @@ AC_PROG_RANLIB
 
 dnl Find the C preprocessor, wherever it may be on this system
 AC_MSG_CHECKING(where to find the C preprocessor)
-if test -x /lib/cpp
+if test -x /usr/bin/cpp
 then
-  CPP_LOCATION="/lib/cpp"
+  CPP_LOCATION="/usr/bin/cpp"
   AC_MSG_RESULT(/lib/cpp)
 else
   if test -x /usr/ccs/lib/cpp 

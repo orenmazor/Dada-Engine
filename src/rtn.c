@@ -126,7 +126,10 @@ int param_indexof(pListNode list, char *nm)
 void param_dump(pParam params)
 {
   if(params) {
-    fprintf(stderr, "%s ", params->data);
+/*
+ * Include (char *) cast on OS X
+ */
+    fprintf(stderr, "%s ", (char *)params->data);
     dump_params(params->next);
   };
 };

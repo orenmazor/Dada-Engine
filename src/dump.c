@@ -51,7 +51,10 @@ static void dump_options(pOption opt)
 void dump_params(pParam params)
 {
   if(params) {
-    printf("%s ", params->data);
+/*
+ * Include (char *) cast on OS X
+ */
+      printf("%s ", (char *)params->data);
     dump_params(params->next);
   };
 };

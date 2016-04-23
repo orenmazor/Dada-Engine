@@ -5,6 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "strfunc.h"
+/*
+ * Include on OS X
+ */
+#include <stdio.h>
 
 #ifndef min
 #define min(x,y) (((x)<(y))?(x):(y))
