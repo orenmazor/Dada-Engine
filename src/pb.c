@@ -16,7 +16,10 @@ extern pRule initial_rule;
 int dump_rtn=0, inhibit=0, verbose=0, trace=0, old_probability=0, wrapwidth=80;
 FILE *outfile;
 extern int yydebug;
-
+/*
+ * Include on OS X
+ */
+char *resolve_rule();
 
 /* resolve a RTN */
 void use_rtn(pRule rtn)

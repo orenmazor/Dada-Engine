@@ -3,6 +3,10 @@
  */
 
 #include <stdlib.h>
+/*
+ * Include on OS X
+ */
+#include <string.h>
 #include "limits.h"
 #include "dict.h"
 #include "ptrlist.h"

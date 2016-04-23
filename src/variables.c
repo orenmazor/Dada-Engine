@@ -5,6 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "variables.h"
+/*
+ * Include on OS X
+ */
+#include <stdio.h>
 
 #ifndef __GNUC__
 #define inline /* */
@@ -14,16 +18,18 @@
 
 struct var *vars = NULL;
 
-static inline struct var *new_str_var(char *name, char *val) {
+static /* inline */ struct var *new_str_var(char *name, char *val) {
   struct var *v = (struct var *)malloc(sizeof(struct var));
   v->name = name; v->type = string_t; v->value.s = val; 
   v->left = v->right = NULL;
+  return v; /* OS X*/
 };
 
-static inline struct var *new_int_var(char *name, int val) {
+static /* inline */ struct var *new_int_var(char *name, int val) {
   struct var *v = (struct var *)malloc(sizeof(struct var));
   v->name = name; v->type = int_t; v->value.i = val; 
   v->left = v->right = NULL;
+  return v; /* OS X*/
 };
 
 static struct var *var_insert_str(struct var *tree, char *name, char *val)
@@ -61,7 +67,7 @@ static struct var *var_insert_int(struct var *tree, char *name, int val)
   return tree;
 };
 
-inline struct var *var_lookup(struct var *tree, char *key)
+/* inline */ struct var *var_lookup(struct var *tree, char *key)
 {
   if(!tree) return NULL;
   if(strcmp(tree->name, key)==0) return tree;
